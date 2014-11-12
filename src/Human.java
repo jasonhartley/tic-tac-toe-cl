@@ -31,23 +31,23 @@ public class Human implements Player {
 				do {
 					System.out.print("Enter row: ");
 					inputRow = br.readLine();
-					row = Integer.valueOf(inputRow);
+					row = Integer.valueOf(inputRow);// todo: handle bad input
 				} while (row < 0 || row >= size);
 
 				do {
 					System.out.print("Enter column: ");
 					inputCol = br.readLine();
-					col = Integer.valueOf(inputCol);
+					col = Integer.valueOf(inputCol);// todo: handle bad input
 				} while (col < 0 || col >= size);
 
 				position.set(row, col);
 				System.out.println(row + ":" + col + ": " + board.get(position));
-			} while (board.get(position) != Value.NONE);
+			} while (!board.isValidPosition(position));
 
 		} catch (IOException io) {
 			io.printStackTrace();
 		}
 
-		return new Play(position, this);
+		return new Play(position, value);
 	}
 }

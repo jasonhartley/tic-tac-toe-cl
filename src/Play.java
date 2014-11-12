@@ -1,4 +1,4 @@
-public class Play {
+public class Play implements Comparable<Play> {
 	private Position position;
 	private int playerVal;
 
@@ -21,5 +21,10 @@ public class Play {
 
 	public int playerVal() {
 		return playerVal;
+	}
+
+	@Override
+	public int compareTo(Play play) {
+		return play.position().ord() - position.ord();
 	}
 }

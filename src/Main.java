@@ -6,7 +6,7 @@ public class Main {
 		Board board = new Board(size);
 		Player[] players = new Player[2];// In the future, the number of players may scale
 		players[0] = new Human(Value.X);
-		players[1] = new Human(Value.O);// todo: offer the choice to play against the computer
+		players[1] = new Computer(Value.O);// todo: offer the choice to play against the computer
 		int winner = Value.NONE;// Player # of winner
 		int counter = 0;// Player array position of whose turn it is
 		Play play;

@@ -5,7 +5,7 @@ public class Board {
 	public static final int MIN_SIZE = 3;
 	public static final int MAX_SIZE = 30;
 
-	private int[][] board;// todo: deprecate
+	private int[][] board;
 	private int[] rowPlays, colPlays;
 	private int size, diagSlashPlays, diagBackslashPlays;
 
@@ -16,15 +16,28 @@ public class Board {
 		colPlays = new int[size];
 	}
 
+	private int get(int row, int col) {
+		if (isValidValue(row, col)) {
+			return board[row][col];
+		}
+		else {
+			return Value.INVALID;
+		}
+	}
+
 	public int get(Position position) {
+		System.out.println("Board.get() pos: " + position.show());
 		return board[position.row()][position.col()];
 	}
 
+	// todo: time complexity is O(n^2), perhaps find a faster way
 	public Set<Play> getPlays() {
 		Set<Play> plays = new TreeSet<Play>();
 		for (int row = 0; row < size; row++) {
 			for(int col = 0; col < size; col++) {
-				plays.add(new Play(new Position(row, col, size - 1), board[row][col]));
+				if (isOccupied(row, col)) {
+					plays.add(new Play(new Position(row, col, size - 1), board[row][col]));
+				}
 			}
 		}
 		return plays;
@@ -96,8 +109,17 @@ public class Board {
 		return (row >= 0 && row < size && col >= 0 && col < size);
 	}
 
+	private boolean isOccupied(int row, int col) {
+		return board[row][col] != Value.NONE;// todo: maybe combine isOccupied and isValidPosition
+	}
+
+	public boolean isValidPosition(Position position) {
+		return get(position) == Value.NONE;
+	}
+
 	private boolean isValidPlay(Play play) {
 		return get(play.position()) == Value.NONE;
+		// todo: maybe ensure that play.player() has 1 less play on the board than the other player
 	}
 
 	private boolean isValidPlayer(int player) {

@@ -1,3 +1,5 @@
+import java.util.Random;
+
 public class Position implements Comparable<Position> {
 	private int row;
 	private int col;
@@ -14,13 +16,10 @@ public class Position implements Comparable<Position> {
 	}
 
 	public Position(int row, int col, int max) {
-		set(row, col);
 		setMax(max);
+		set(row, col);
 	}
 
-	public void setMax(int max) {
-		this.max = max;
-	}
 	public void set(int row, int col) {
 		if (isValid(row, col)) {
 			this.row = row;
@@ -31,8 +30,57 @@ public class Position implements Comparable<Position> {
 			inValidate();
 		}
 	}
-	private void setOrdinal(int row, int col) {
-		ord = (row + 1) + max * (col + 1);
+	public void setRow(int row) {
+		this.row = row;
+	}
+	public void setCol(int col) {
+		this.col = col;
+	}
+	public void setMax(int max) {
+		this.max = max;
+	}
+	public void setAsCenter() {
+		if (hasCenter()) {
+			set(max / 2, max / 2);
+		}
+		// Invalidate if an even number of possible positions
+		else {
+			inValidate();
+		}
+	}
+	// Sets as a random corner
+	public void setAsCorner() {
+		set(randomBit() * max, randomBit() * max);
+	}
+	// Set as an adjacent corner based on a position that is a side position
+	public void setAsAdjCorner(Position position) {
+		if (position.isSide()) {
+			int row = position.row();
+			int col = position.col();
+
+			setAsCorner();
+
+			// If pos is in a row, chose that row
+			if (row == 0 || row == max) {
+				setRow(row);
+
+			}
+			// If pos is in a col, use that col
+			else if (col == 0 || col == max) {
+				setCol(col);
+			}
+			else {
+				// This condition should never be reachable
+				inValidate();
+			}
+
+		}
+		else {
+			inValidate();
+		}
+	}
+	public void setRandom() {
+		set(random(), random());
 	}
 	public int row() {
 		return row;
@@ -62,19 +110,41 @@ public class Position implements Comparable<Position> {
 		return (col == 0 || col == max);
 	}
 	public boolean isDiagSlash() {
-		return (row == -col);
+		return (row == max - col);
 	}
 	public boolean isDiagBackslash() {
 		return (row == col);
 	}
+
+	private void setOrdinal(int row, int col) {
+		ord = (row + 1) + max * (col + 1);
+	}
 	private boolean isValid(int row, int col) {
 		return (row >= 0 && row <= max && col >= 0 && col <= max);
+	}
+	private boolean hasCenter() {
+		// To have a center there must be an odd number of rows and cols, meaning the max index is an even number
+		return max % 2 == 0;
 	}
 	private void inValidate() {
 		row = -1;
 		col = -1;
-		max = -1;
+		max = -1;// todo: maybe not set this, for example setAsCenter doesn't really need the max invalidated
 	}
+	private int randomBit() {
+		Random rand = new Random();
+		return rand.nextInt(2);
+	}
+	private int random() {
+		Random rand = new Random();
+		return rand.nextInt(max + 1);
+	}
+	// todo: for debug purposes, remove this later
+	public String show() {
+		return row + ", " + col + ", " + max;
+	}
+
+	// todo: is this necessary in Position, or can it just be in Play?
 	@Override
 	public int compareTo(Position position) {
 		return ord - position.ord();

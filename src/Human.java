@@ -29,19 +29,23 @@ public class Human implements Player {
 			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 			do {
 				do {
-					System.out.print("Enter row: ");
-					inputRow = br.readLine();
-					row = Integer.valueOf(inputRow);// todo: handle bad input
+					do {
+						System.out.print("Enter row: ");
+						inputRow = br.readLine();
+					} while (!isPostiveInt(inputRow));
+					row = Integer.valueOf(inputRow);
 				} while (row < 0 || row >= size);
 
 				do {
-					System.out.print("Enter column: ");
-					inputCol = br.readLine();
-					col = Integer.valueOf(inputCol);// todo: handle bad input
+					do {
+						System.out.print("Enter column: ");
+						inputCol = br.readLine();
+					} while (!isPostiveInt(inputCol));
+					col = Integer.valueOf(inputCol);
 				} while (col < 0 || col >= size);
 
 				position.set(row, col);
-				System.out.println(row + ":" + col + ": " + board.get(position));
+
 			} while (!board.isValidPosition(position));
 
 		} catch (IOException io) {
@@ -49,5 +53,10 @@ public class Human implements Player {
 		}
 
 		return new Play(position, value);
+	}
+
+	private boolean isPostiveInt(String input) {
+		String pattern ="\\d+";// regex for positive int
+		return input.matches(pattern);
 	}
 }

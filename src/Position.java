@@ -20,6 +20,11 @@ public class Position implements Comparable<Position> {
 		set(row, col);
 	}
 
+	public Position(Position position) {
+		setMax(position.max());
+		set(position.row(), position.col());
+	}
+
 	public void set(int row, int col) {
 		if (isValid(row, col)) {
 			this.row = row;
@@ -48,11 +53,12 @@ public class Position implements Comparable<Position> {
 			inValidate();
 		}
 	}
+	// todo: maybe change names to setAsAnyCorner, setAsAnyAdjCorner
 	// Sets as a random corner
 	public void setAsCorner() {
 		set(randomBit() * max, randomBit() * max);
 	}
-	// Set as an adjacent corner based on a position that is a side position
+	// Set as an adjacent corner based on a position that is a side position // todo: may not need this method
 	public void setAsAdjCorner(Position position) {
 		if (position.isSide()) {
 			int row = position.row();
@@ -60,12 +66,12 @@ public class Position implements Comparable<Position> {
 
 			setAsCorner();
 
-			// If pos is in a row, chose that row
+			// If pos is in an outside row, chose that row
 			if (row == 0 || row == max) {
 				setRow(row);
 
 			}
-			// If pos is in a col, use that col
+			// If pos is in an outside col, use that col
 			else if (col == 0 || col == max) {
 				setCol(col);
 			}
@@ -79,6 +85,34 @@ public class Position implements Comparable<Position> {
 			inValidate();
 		}
 	}
+	public void setAsXAxisFlip() {
+		setRow(max - row);
+	}
+	public void setAsYAxisFlip() {
+		setCol(max - col);
+	}
+	public void setAsSlashAxisFlip() {
+		int temp = max - row;
+		setRow(max - col);
+		setCol(temp);
+	}
+	public void setAsBackslashAxisFlip() {
+		int temp = row;
+		setRow(col);
+		setCol(temp);
+	}
+	public void setAsClockwiseRotation() {
+		setAsSlashAxisFlip();
+		setAsXAxisFlip();
+	}
+	public void setAsCounterclockwiseRotation() {
+		setAsSlashAxisFlip();
+		setAsYAxisFlip();
+	}
+	public void setAs180Rotation() {
+		setAsXAxisFlip();
+		setAsYAxisFlip();
+	}
 	public void setRandom() {
 		set(random(), random());
 	}
@@ -87,6 +121,9 @@ public class Position implements Comparable<Position> {
 	}
 	public int col() {
 		return col;
+	}
+	public int max() {
+		return max;
 	}
 	public int ord() {
 		return ord;

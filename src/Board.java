@@ -26,8 +26,16 @@ public class Board {
 	}
 
 	public int get(Position position) {
-		System.out.println("Board.get() pos: " + position.show());
 		return board[position.row()][position.col()];
+	}
+
+	public int getCenter() {
+		if (size % 2 == 0) {
+			return Value.INVALID;// Board has an even number of rows/cols with no center
+		}
+		else {
+			return board[size / 2][size /2];
+		}
 	}
 
 	// todo: time complexity is O(n^2), perhaps find a faster way
@@ -133,4 +141,22 @@ public class Board {
 	public int maxIndex() {
 		return size - 1;
 	}
+
+	public Position anyOpenAdjacent(Position position) {
+		int row = position.row();
+		int col = position.col();
+		int max = position.max();
+
+		// Try above
+		if (row > 0 && !isOccupied(row - 1, col)) return new Position(row - 1, col, max);
+		// Try to right
+		else if (col < max && !isOccupied(row, col + 1)) return new Position(row, col + 1, max);
+		// Try below
+		else if (row < max && !isOccupied(row + 1, col)) return new Position(row + 1, col, max);
+		// Try to left
+		else if (col > 0 && !isOccupied(row, col - 1)) return new Position(row, col - 1, max);
+		else return new Position();// Nothing adjacent, so an invalidated position is returned
+	}
+
+
 }

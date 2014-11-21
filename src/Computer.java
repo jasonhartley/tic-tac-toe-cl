@@ -75,7 +75,7 @@ public class Computer implements Player {
 				System.out.println("Choosing random");
 				position.setRandom();
 			}
-			while (!board.isValidPosition(position));
+			while (!board.isOpenPosition(position));
 */
 
 			// aligned plays: Two or more plays from the same player in the same row, col, or diagonal
@@ -135,16 +135,13 @@ public class Computer implements Player {
 	}
 
 	private Position buildTriple(Board board) {
-		Position position = null;
-		return position;
+		return board.findDouble(playerValue);
 	}
 	private Position blockTriple(Board board) {
-		Position position = null;
-		return position;
+		return board.findDouble(-playerValue);
 	}
 	private Position buildSplit(Board board) {
-		Position position = null;
-		return position;
+		return board.findSinglesIntersection(playerValue);
 	}
 	// It is important that if this double is blocked, it will not complete the opponent's split.
 	// todo: be sure that the open square of the the double is NOT the opponent's split position (this can happen with scenario B6)

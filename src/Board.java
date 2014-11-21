@@ -1,3 +1,5 @@
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -6,14 +8,23 @@ public class Board {
 	public static final int MAX_SIZE = 30;
 
 	private int[][] board;
-	private int[] rowPlays, colPlays;
-	private int size, diagSlashPlays, diagBackslashPlays;
+	private int[] laneSum;// rows: 0-2, cols: 3-5, diagSlash: 6, diagBackslash: 7
+	private int[] rowSum, colSum;
+	private int size, diagSlashSum, diagBackslashSum;
 
 	public Board(int size) {
 		this.size = size > MAX_SIZE ? MAX_SIZE : size;
 		board = new int[size][size];
-		rowPlays = new int[size];
-		colPlays = new int[size];
+		rowSum = new int[size];
+		colSum = new int[size];
+
+		// laneSum points to the other sums, but is now easy to iterate over
+		for (int i = 0; i < size; i++) {
+			laneSum[i] = rowSum[i];
+			laneSum[size + i] = colSum[i];
+		}
+		laneSum[size * 2 + 1] = diagSlashSum;
+		laneSum[size * 2 + 2] = diagBackslashSum;
 	}
 
 	private int get(int row, int col) {
@@ -43,7 +54,7 @@ public class Board {
 		Set<Play> plays = new TreeSet<Play>();
 		for (int row = 0; row < size; row++) {
 			for(int col = 0; col < size; col++) {
-				if (isOccupied(row, col)) {
+				if (!isOpenPosition(row, col)) {
 					plays.add(new Play(new Position(row, col, size - 1), board[row][col]));
 				}
 			}
@@ -59,10 +70,10 @@ public class Board {
 			value = play.playerVal();
 			Position pos = play.position();
 			board[row][col] = value;
-			rowPlays[row] += value;
-			colPlays[col] += value;
-			if (pos.isDiagBackslash()) diagBackslashPlays += value;
-			if (pos.isDiagSlash()) diagSlashPlays += value;
+			rowSum[row] += value;
+			colSum[col] += value;
+			if (pos.isDiagBackslash()) diagBackslashSum += value;
+			if (pos.isDiagSlash()) diagSlashSum += value;
 
 			return outcome(play);
 		}
@@ -102,10 +113,10 @@ public class Board {
 		int col = play.position().col();
 		int player = play.playerVal();
 
-		if (rowPlays[row] == player * size ||
-				colPlays[col] == player * size ||
-				diagBackslashPlays == player * size ||
-				diagSlashPlays == player * size) {
+		if (rowSum[row] == player * size ||
+				colSum[col] == player * size ||
+				diagBackslashSum == player * size ||
+				diagSlashSum == player * size) {
 			return play.playerVal();
 		}
 		else {
@@ -117,11 +128,11 @@ public class Board {
 		return (row >= 0 && row < size && col >= 0 && col < size);
 	}
 
-	private boolean isOccupied(int row, int col) {
-		return board[row][col] != Value.NONE;// todo: maybe combine isOccupied and isValidPosition
+	private boolean isOpenPosition(int row, int col) {
+		return board[row][col] == Value.NONE;
 	}
 
-	public boolean isValidPosition(Position position) {
+	public boolean isOpenPosition(Position position) {
 		return get(position) == Value.NONE;
 	}
 
@@ -148,15 +159,164 @@ public class Board {
 		int max = position.max();
 
 		// Try above
-		if (row > 0 && !isOccupied(row - 1, col)) return new Position(row - 1, col, max);
+		if (row > 0 && isOpenPosition(row - 1, col)) return new Position(row - 1, col, max);
 		// Try to right
-		else if (col < max && !isOccupied(row, col + 1)) return new Position(row, col + 1, max);
+		else if (col < max && isOpenPosition(row, col + 1)) return new Position(row, col + 1, max);
 		// Try below
-		else if (row < max && !isOccupied(row + 1, col)) return new Position(row + 1, col, max);
+		else if (row < max && isOpenPosition(row + 1, col)) return new Position(row + 1, col, max);
 		// Try to left
-		else if (col > 0 && !isOccupied(row, col - 1)) return new Position(row, col - 1, max);
+		else if (col > 0 && isOpenPosition(row, col - 1)) return new Position(row, col - 1, max);
 		else return new Position();// Nothing adjacent, so an invalidated position is returned
 	}
 
+	// Returns the open position corresponding to the first double found
+	public Position findDouble(int playerValue) {
+		for (int i = 0; i < size; i++) {
+			if (rowSum[i] == size * playerValue - 1) {
+				// Now find which square in that row
+				for (int j = 0; j < size; j++) {
+					if (isOpenPosition(i, j)) {
+						return new Position(i, j, size - 1);
+					}
+				}
+			}
+			if (colSum[i] == size * playerValue -1 ) {
+				// Now find which square in that col
+				for (int j = 0; j < size; j++) {
+					if (isOpenPosition(j, i)) {
+						return new Position(j, i, size - 1);
+					}
+				}
+			}
+		}
+		if (diagSlashSum == size * playerValue - 1) {
+			for (int i = 0; i < size; i++) {
+				int j = size - 1 - 1;
+				if (isOpenPosition(i, j)) {
+					return new Position(i, j, size - 1);
+				}
+			}
+		}
+		if (diagBackslashSum == size * playerValue - 1) {
+			for (int i = 0; i < size; i++) {
+				if (isOpenPosition(i, i)) {
+					return new Position(i, i, size - 1);
+				}
+			}
+		}
+		return null;
+	}
 
+	// Returns the position where two singles intersect
+	// note: It is possible to have more than one singles intersection, but since occupying one will guarantee a win on
+	//       the next play, choosing the first one we find will do.
+	public Position findSinglesIntersection(int playerValue) {
+		Position position = null;
+		List<Integer> lanes = new ArrayList<Integer>();
+		for (int i = 0; i < size; i++) {
+			if (rowSum[i] == playerValue) lanes.add(i);
+			if (colSum[i] == playerValue) lanes.add(i + size);
+		}
+		if (diagSlashSum == playerValue) lanes.add(size * 2 + 1);
+		if (diagBackslashSum == playerValue) lanes.add(size * 2 + 2);
+
+		int count = lanes.size();
+		int last = count - 1;
+		int slashIndex = size * 2;
+		int backslashIndex = size * 2 + 1;
+		int next;
+		int row = Value.INVALID;
+		int col = Value.INVALID;
+		for (int i = 0; i < count; i ++) {
+			// If we gave a valid row and col, quit the loop
+			if (row != Value.INVALID && col != Value.INVALID) break;
+			// If we are looking at the last index, then 'next' loops back to the beginning and is 0
+			next = i < last ? i + 1 : 0;
+			int j = lanes.get(next);
+
+			// If it's a row
+			if (i < size) {
+				row = lanes.get(i);
+				// If next is a column
+				if (j < size * 2) {
+					col = j;
+				}
+				// If next is a diagonal
+				else {
+					// If next is slash
+					if (j == slashIndex) {
+						col = size - row - 1;
+					}
+					// If next is backslash
+					else if (j == backslashIndex) {
+						col = row;
+					}
+					else {
+						System.out.println("Error.  Index out of expected bounds.");
+					}
+				}
+			}
+			// If it's a column
+			else if (i < size * 2) {
+				col = lanes.get(i);
+				// If next is a row
+				if (j < size) {
+					row = j;
+				}
+				// If next is a diagonal
+				else {
+					// If next is slash
+					if (j == slashIndex) {
+						row = size - col - 1;
+					}
+					// If next is backslash
+					else if (j == backslashIndex) {
+						row = col;
+					}
+					else {
+						System.out.println("Error.  Index out of expected bounds.");
+					}
+				}
+			}
+			// If it's a diagonal
+			else if (i <= backslashIndex) {
+				// If next is a row
+				if (j < size) {
+					row = j;
+					// If i is slash
+					if (i == slashIndex) {
+						col = size - row - 1;
+					}
+					// If i is backslash
+					else if (j == backslashIndex) {
+						col = row;
+					}
+				}
+				// If next is a column
+				else if (j < size * 2) {
+					col = j;
+					// If i is slash
+					if (j == slashIndex) {
+						row = size - col - 1;
+					}
+					// If i is backslash
+					else if (j == backslashIndex) {
+						row = col;
+					}
+				}
+			}
+			else {
+				System.out.println("Error.  Index out of expected bounds.");
+			}
+		}
+
+		// Just to double check
+		if (isOpenPosition(row, col)) {
+			position = new Position(row, col, size - 1);
+		} else {
+			System.out.println("Error: Board.findSinglesIntersection()");
+		}
+
+		return position;
+	}
 }

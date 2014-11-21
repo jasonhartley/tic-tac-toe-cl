@@ -46,7 +46,7 @@ public class Human implements Player {
 
 				position.set(row, col);
 
-			} while (!board.isValidPosition(position));
+			} while (!board.isOpenPosition(position));
 
 		} catch (IOException io) {
 			io.printStackTrace();

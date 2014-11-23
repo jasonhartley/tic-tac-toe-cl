@@ -9,8 +9,8 @@ public class Board {
 
 	private int[][] board;
 	private int[] laneSum;// rows: 0-2, cols: 3-5, diagSlash: 6, diagBackslash: 7
-	private int[] rowSum, colSum;
-	private int size, diagSlashSum, diagBackslashSum;
+	private int[] rowSum, colSum, rowCount, colCount;
+	private int size, diagSlashSum, diagBackslashSum, diagSlashCount, diagBackslashCount;
 
 	public Board(int size) {
 		this.size = size > MAX_SIZE ? MAX_SIZE : size;
@@ -72,8 +72,17 @@ public class Board {
 			board[row][col] = value;
 			rowSum[row] += value;
 			colSum[col] += value;
-			if (pos.isDiagBackslash()) diagBackslashSum += value;
-			if (pos.isDiagSlash()) diagSlashSum += value;
+			rowCount[row]++;
+			colCount[col]++;
+			if (pos.isDiagSlash()) {
+				diagSlashSum += value;
+				diagSlashCount++;
+			}
+			if (pos.isDiagBackslash()) {
+				diagBackslashSum += value;
+				diagBackslashCount++;
+			}
+
 
 			return outcome(play);
 		}
@@ -207,29 +216,35 @@ public class Board {
 		return null;
 	}
 
+	public List<Integer> findSingles(int playerValue) {
+		List<Integer> lanes = new ArrayList<Integer>();
+		// Find all the lane sums that equal the player value and have only one entry
+		for (int i = 0; i < size; i++) {
+			if (rowSum[i] == playerValue && rowCount[i] == 1) lanes.add(i);
+			if (colSum[i] == playerValue && colCount[i] == 1) lanes.add(i + size);
+		}
+		if (diagSlashSum == playerValue && diagSlashCount == 1) lanes.add(size * 2 + 1);
+		if (diagBackslashSum == playerValue && diagBackslashCount == 1) lanes.add(size * 2 + 2);
+
+		return lanes;
+	}
+
 	// Returns the position where two singles intersect
 	// note: It is possible to have more than one singles intersection, but since occupying one will guarantee a win on
 	//       the next play, choosing the first one we find will do.
-	public Position findSinglesIntersection(int playerValue) {
-		Position position = null;
-		List<Integer> lanes = new ArrayList<Integer>();
-		for (int i = 0; i < size; i++) {
-			if (rowSum[i] == playerValue) lanes.add(i);
-			if (colSum[i] == playerValue) lanes.add(i + size);
-		}
-		if (diagSlashSum == playerValue) lanes.add(size * 2 + 1);
-		if (diagBackslashSum == playerValue) lanes.add(size * 2 + 2);
-
-		int count = lanes.size();
-		int last = count - 1;
+	public List<Position> findSinglesIntersections(int playerValue) {
+		List<Position> intersections = new ArrayList<Position>();
+		List<Integer> lanes = findSingles(playerValue);
 		int slashIndex = size * 2;
 		int backslashIndex = size * 2 + 1;
-		int next;
-		int row = Value.INVALID;
-		int col = Value.INVALID;
+		int count = lanes.size();
+		int last = count - 1;
+		int next, row, col;
+
 		for (int i = 0; i < count; i ++) {
-			// If we gave a valid row and col, quit the loop
-			if (row != Value.INVALID && col != Value.INVALID) break;
+			row = Value.INVALID;
+			col = Value.INVALID;
+
 			// If we are looking at the last index, then 'next' loops back to the beginning and is 0
 			next = i < last ? i + 1 : 0;
 			int j = lanes.get(next);
@@ -308,15 +323,15 @@ public class Board {
 			else {
 				System.out.println("Error.  Index out of expected bounds.");
 			}
+
+			// Just to double check
+			if (row != Value.INVALID && col != Value.INVALID && isOpenPosition(row, col)) {
+				intersections.add(new Position(row, col, size - 1));
+			} else {
+				System.out.println("Error: Board.findSinglesIntersection()");
+			}
 		}
 
-		// Just to double check
-		if (isOpenPosition(row, col)) {
-			position = new Position(row, col, size - 1);
-		} else {
-			System.out.println("Error: Board.findSinglesIntersection()");
-		}
-
-		return position;
+		return intersections;
 	}
 }

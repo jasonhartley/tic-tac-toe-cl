@@ -141,11 +141,14 @@ public class Computer implements Player {
 		return board.findDouble(-playerValue);
 	}
 	private Position buildSplit(Board board) {
-		return board.findSinglesIntersection(playerValue);
+		return board.findSinglesIntersections(playerValue).get(0);// If more than one intersection, any one of them will do
 	}
 	// It is important that if this double is blocked, it will not complete the opponent's split.
 	// todo: be sure that the open square of the the double is NOT the opponent's split position (this can happen with scenario B6)
 	private Position buildDouble(Board board) {
+		Set<Position> mySingles = board.findSingles(playerValue);
+		Set<Position> hisSplits = board.findSinglesIntersections(-playerValue);
+		return mySingles.removeAll(hisSplits);
 		Position position = null;
 		return position;
 	}

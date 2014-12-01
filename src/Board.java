@@ -4,334 +4,162 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class Board {
-	public static final int MIN_SIZE = 3;
-	public static final int MAX_SIZE = 30;
+	private int size, ordinalCount, laneCount, playerCount;
 
-	private int[][] board;
-	private int[] laneSum;// rows: 0-2, cols: 3-5, diagSlash: 6, diagBackslash: 7
-	private int[] rowSum, colSum, rowCount, colCount;
-	private int size, diagSlashSum, diagBackslashSum, diagSlashCount, diagBackslashCount;
+	List<Lane> lanes = new ArrayList<Lane>();
+	List<Set<Integer>> laneIndexesByOrdinal = new ArrayList<Set<Integer>>();
 
 	public Board(int size) {
-		this.size = size > MAX_SIZE ? MAX_SIZE : size;
-		board = new int[size][size];
-		rowSum = new int[size];
-		colSum = new int[size];
+		this.size = size;
+		ordinalCount = size * size;
+		laneCount = size * 2 + 2;// rows, columns, and 2 diagonals
+		playerCount = 2;// todo: make this a parameter
 
-		// laneSum points to the other sums, but is now easy to iterate over
-		for (int i = 0; i < size; i++) {
-			laneSum[i] = rowSum[i];
-			laneSum[size + i] = colSum[i];
+		// Fill the list with open sets
+		while (laneIndexesByOrdinal.size() < ordinalCount) {
+			laneIndexesByOrdinal.add(new TreeSet<Integer>());
 		}
-		laneSum[size * 2 + 1] = diagSlashSum;
-		laneSum[size * 2 + 2] = diagBackslashSum;
-	}
 
-	private int get(int row, int col) {
-		if (isValidValue(row, col)) {
-			return board[row][col];
-		}
-		else {
-			return Value.INVALID;
-		}
-	}
+		// Create all the lanes
+		for (int laneIndex = 0; laneIndex < laneCount; laneIndex++ ) {
+			// Create the lane
+			lanes.add(new Lane(laneIndex, size, playerCount));
+			System.out.println(lanes.get(laneIndex).openSet());
 
-	public int get(Position position) {
-		return board[position.row()][position.col()];
-	}
-
-	public int getCenter() {
-		if (size % 2 == 0) {
-			return Value.INVALID;// Board has an even number of rows/cols with no center
-		}
-		else {
-			return board[size / 2][size /2];
-		}
-	}
-
-	// todo: time complexity is O(n^2), perhaps find a faster way
-	public Set<Play> getPlays() {
-		Set<Play> plays = new TreeSet<Play>();
-		for (int row = 0; row < size; row++) {
-			for(int col = 0; col < size; col++) {
-				if (!isOpenPosition(row, col)) {
-					plays.add(new Play(new Position(row, col, size - 1), board[row][col]));
-				}
+			// Add this lane index to the list of lanes by ordinal
+			for (int ordinal : lanes.get(laneIndex).openSet()) {
+				laneIndexesByOrdinal.get(ordinal).add(laneIndex);
 			}
 		}
-		return plays;
 	}
 
-	public int put(Play play) {
-		if (isValidPlay(play)) {
-			int row, col, value;
-			row = play.position().row();
-			col = play.position().col();
-			value = play.playerVal();
-			Position pos = play.position();
-			board[row][col] = value;
-			rowSum[row] += value;
-			colSum[col] += value;
-			rowCount[row]++;
-			colCount[col]++;
-			if (pos.isDiagSlash()) {
-				diagSlashSum += value;
-				diagSlashCount++;
+	public boolean put(int ordinal, int playerValue) {
+		Set<Integer> lanesToUpdate = laneIndexesByOrdinal.get(ordinal);
+		for (int laneIndex : lanesToUpdate) {
+			if (lanes.get(laneIndex).put(playerValue, ordinal)) {
+				return true;
 			}
-			if (pos.isDiagBackslash()) {
-				diagBackslashSum += value;
-				diagBackslashCount++;
-			}
-
-
-			return outcome(play);
 		}
-		else {
-			return Value.INVALID;
-		}
+		return false;
 	}
 
-	// Output a position
-	public String show(Position position) {
-		return show(position.row(), position.col());
-	}
-	public String show(int row, int col) {
-		return Value.show(board[row][col]);
-	}
-
-	// Output the board
 	public void show() {
-		for (int j = 0; j < size; j++) {
-			System.out.print("----");
+		List<Integer> serial = new ArrayList<Integer>();
+		// Create a serialized version of the board using the row lanes
+		for (int laneIndex = 0; laneIndex < size; laneIndex++) {
+			serial.addAll(lanes.get(laneIndex).getList());
 		}
-		System.out.print("-\n");
+		// Print the board  todo: make this prettier
+		for (int ordinal = 0; ordinal < ordinalCount; ordinal++) {
+			if (ordinal % size == 0) System.out.println();
+			System.out.println(" " + serial.get(ordinal) + " ");
+		}
+	}
+
+	// Returns a set of ordinal where all other ordinals in at least one of its lanes are occupied by the given player value.
+	// Example: If a lane has ordinals {0, 1, 2} and player 1 has {0, 2}, and {1} is open, the method returns {1}.
+	public Set<Integer> findDoubles(int playerValue) {
+		Set<Integer> ordinals = new TreeSet<Integer>();
+		for (int i = 0; i < laneCount; i++) {
+			ordinals.addAll(lanes.get(i).getDouble(playerValue));
+		}
+		return ordinals;
+	}
+
+	public int findADouble(int playerValue) {
+		return findDoubles(playerValue).iterator().next();// todo: not sure what happens if the set is empty
+	}
+
+	// Returns a set of all open ordinals where a lane contains the given player value once with the rest open
+	private Set<Integer> findSingles(int playerValue) {
+		Set<Integer> singles = new TreeSet<Integer>();
+		for (int i = 0; i < laneCount; i++) {
+			singles.addAll(lanes.get(i).getSingle(playerValue));
+		}
+		return singles;
+	}
+
+	public int findASingle(int playerValue) {
+		return findSingles(playerValue).iterator().next();// todo: what if set is empty?
+	}
+
+	// Returns a set of open ordinals where singles lanes intersect for a given player value
+	// Example 1: Given the following board:
+	//   X | 1 | O
+	//   3 | 4 | 5
+	//   6 | 7 | X
+	//   Player X has two singles: row 2 and column 3, which intersect at ordinal 6, returning {6}
+	// Example 2:
+	//   X | 1 | 2
+	//   3 | O | 5
+	//   6 | 7 | X
+	//   Player X has four singles: rows 0 & 2, and columns 3 & 5, which intersect at ordinals 2 and 6, returning {2,6}
+	public Set<Integer> findSinglesIntersections(int playerValue) {
+		Set<Integer> singlesIntersections = new TreeSet<Integer>();
+		Set<Integer> tempIntersection;
+
+		// Prep work: Union of open ordinals of rows that are singles
+		Set<Integer> rows = new TreeSet<Integer>();
 		for (int i = 0; i < size; i++) {
-			for (int j = 0; j < size; j++) {
-				System.out.print("| " + show(i, j) + " ");
-			}
-			System.out.print("|\n");
-			for (int j = 0; j < size; j++) {
-				System.out.print("----");
-			}
-			System.out.print("-\n");
+			rows.addAll(lanes.get(i).getSingle(playerValue));
 		}
-	}
-
-	private int outcome(Play play) {
-		int row = play.position().row();
-		int col = play.position().col();
-		int player = play.playerVal();
-
-		if (rowSum[row] == player * size ||
-				colSum[col] == player * size ||
-				diagBackslashSum == player * size ||
-				diagSlashSum == player * size) {
-			return play.playerVal();
+		// Prep work: Union of open ordinals of columns that are singles
+		Set<Integer> cols = new TreeSet<Integer>();
+		for (int i = size; i < size * 2; i++) {
+			cols.addAll(lanes.get(i).getSingle(playerValue));
 		}
-		else {
-			return Value.NONE;
+		// Prep work: Get the open ordinals of the diagonals that are singles
+		Set<Integer> diag = lanes.get(size * 2).getSingle(playerValue);
+		Set<Integer> anti = lanes.get(size * 2 + 1).getSingle(playerValue);
+		// Add intersection of rows and columns
+		tempIntersection = new TreeSet<Integer>(rows);
+		tempIntersection.retainAll(cols);
+		singlesIntersections.addAll(tempIntersection);
+		// Add intersection of rows and diagonal
+		tempIntersection = new TreeSet<Integer>(rows);
+		tempIntersection.retainAll(diag);
+		singlesIntersections.addAll(tempIntersection);
+		// Add intersection of rows and anti-diagonal
+		tempIntersection = new TreeSet<Integer>(rows);
+		tempIntersection.retainAll(anti);
+		singlesIntersections.addAll(tempIntersection);
+		// Add intersection of columns and diagonal
+		tempIntersection = new TreeSet<Integer>(cols);
+		tempIntersection.retainAll(diag);
+		singlesIntersections.addAll(tempIntersection);
+		// Add intersection of columns and anti-diagonal
+		tempIntersection = new TreeSet<Integer>(cols);
+		tempIntersection.retainAll(anti);
+		singlesIntersections.addAll(tempIntersection);
+		// Add intersection of diagonal and anti-diagonal
+		tempIntersection = new TreeSet<Integer>(diag);
+		tempIntersection.retainAll(anti);
+		singlesIntersections.addAll(tempIntersection);
+
+		return singlesIntersections;
+	}
+
+	// A test for inside the constructor
+/*
+		for (int ordinal = 0; ordinal < ordinalCount; ordinal++) {
+			System.out.println("ord " + ordinal + ": " +laneIndexesByOrdinal.get(ordinal));
 		}
-	}
 
-	private boolean isValidValue(int row, int col) {
-		return (row >= 0 && row < size && col >= 0 && col < size);
-	}
-
-	private boolean isOpenPosition(int row, int col) {
-		return board[row][col] == Value.NONE;
-	}
-
-	public boolean isOpenPosition(Position position) {
-		return get(position) == Value.NONE;
-	}
-
-	private boolean isValidPlay(Play play) {
-		return get(play.position()) == Value.NONE;
-		// todo: maybe ensure that play.player() has 1 less play on the board than the other player
-	}
-
-	private boolean isValidPlayer(int player) {
-		return (player == Value.X || player == Value.O);
-	}
-
-	public int size() {
-		return size;
-	}
-
-	public int maxIndex() {
-		return size - 1;
-	}
-
-	public Position anyOpenAdjacent(Position position) {
-		int row = position.row();
-		int col = position.col();
-		int max = position.max();
-
-		// Try above
-		if (row > 0 && isOpenPosition(row - 1, col)) return new Position(row - 1, col, max);
-		// Try to right
-		else if (col < max && isOpenPosition(row, col + 1)) return new Position(row, col + 1, max);
-		// Try below
-		else if (row < max && isOpenPosition(row + 1, col)) return new Position(row + 1, col, max);
-		// Try to left
-		else if (col > 0 && isOpenPosition(row, col - 1)) return new Position(row, col - 1, max);
-		else return new Position();// Nothing adjacent, so an invalidated position is returned
-	}
-
-	// Returns the open position corresponding to the first double found
-	public Position findDouble(int playerValue) {
-		for (int i = 0; i < size; i++) {
-			if (rowSum[i] == size * playerValue - 1) {
-				// Now find which square in that row
-				for (int j = 0; j < size; j++) {
-					if (isOpenPosition(i, j)) {
-						return new Position(i, j, size - 1);
-					}
-				}
+		int playerValue = 1;
+		for (int ordinal = 0; ordinal < ordinalCount; ordinal++) {
+			// Method: boolean put(int ordinal)
+			Set<Integer> lanesToUpdate = laneIndexesByOrdinal.get(ordinal);
+			for (int laneIndex : lanesToUpdate) {
+				lanes.get(laneIndex).put(playerValue, ordinal);
 			}
-			if (colSum[i] == size * playerValue -1 ) {
-				// Now find which square in that col
-				for (int j = 0; j < size; j++) {
-					if (isOpenPosition(j, i)) {
-						return new Position(j, i, size - 1);
-					}
-				}
-			}
+			playerValue %= 2;
+			playerValue++;
 		}
-		if (diagSlashSum == size * playerValue - 1) {
+		for (int j = 1; j <= 2; j++) {
 			for (int i = 0; i < size; i++) {
-				int j = size - 1 - 1;
-				if (isOpenPosition(i, j)) {
-					return new Position(i, j, size - 1);
-				}
+				System.out.println(lanes.get(i).getTaken(j));
 			}
 		}
-		if (diagBackslashSum == size * playerValue - 1) {
-			for (int i = 0; i < size; i++) {
-				if (isOpenPosition(i, i)) {
-					return new Position(i, i, size - 1);
-				}
-			}
-		}
-		return null;
-	}
+*/
 
-	public List<Integer> findSingles(int playerValue) {
-		List<Integer> lanes = new ArrayList<Integer>();
-		// Find all the lane sums that equal the player value and have only one entry
-		for (int i = 0; i < size; i++) {
-			if (rowSum[i] == playerValue && rowCount[i] == 1) lanes.add(i);
-			if (colSum[i] == playerValue && colCount[i] == 1) lanes.add(i + size);
-		}
-		if (diagSlashSum == playerValue && diagSlashCount == 1) lanes.add(size * 2 + 1);
-		if (diagBackslashSum == playerValue && diagBackslashCount == 1) lanes.add(size * 2 + 2);
-
-		return lanes;
-	}
-
-	// Returns the position where two singles intersect
-	// note: It is possible to have more than one singles intersection, but since occupying one will guarantee a win on
-	//       the next play, choosing the first one we find will do.
-	public List<Position> findSinglesIntersections(int playerValue) {
-		List<Position> intersections = new ArrayList<Position>();
-		List<Integer> lanes = findSingles(playerValue);
-		int slashIndex = size * 2;
-		int backslashIndex = size * 2 + 1;
-		int count = lanes.size();
-		int last = count - 1;
-		int next, row, col;
-
-		for (int i = 0; i < count; i ++) {
-			row = Value.INVALID;
-			col = Value.INVALID;
-
-			// If we are looking at the last index, then 'next' loops back to the beginning and is 0
-			next = i < last ? i + 1 : 0;
-			int j = lanes.get(next);
-
-			// If it's a row
-			if (i < size) {
-				row = lanes.get(i);
-				// If next is a column
-				if (j < size * 2) {
-					col = j;
-				}
-				// If next is a diagonal
-				else {
-					// If next is slash
-					if (j == slashIndex) {
-						col = size - row - 1;
-					}
-					// If next is backslash
-					else if (j == backslashIndex) {
-						col = row;
-					}
-					else {
-						System.out.println("Error.  Index out of expected bounds.");
-					}
-				}
-			}
-			// If it's a column
-			else if (i < size * 2) {
-				col = lanes.get(i);
-				// If next is a row
-				if (j < size) {
-					row = j;
-				}
-				// If next is a diagonal
-				else {
-					// If next is slash
-					if (j == slashIndex) {
-						row = size - col - 1;
-					}
-					// If next is backslash
-					else if (j == backslashIndex) {
-						row = col;
-					}
-					else {
-						System.out.println("Error.  Index out of expected bounds.");
-					}
-				}
-			}
-			// If it's a diagonal
-			else if (i <= backslashIndex) {
-				// If next is a row
-				if (j < size) {
-					row = j;
-					// If i is slash
-					if (i == slashIndex) {
-						col = size - row - 1;
-					}
-					// If i is backslash
-					else if (j == backslashIndex) {
-						col = row;
-					}
-				}
-				// If next is a column
-				else if (j < size * 2) {
-					col = j;
-					// If i is slash
-					if (j == slashIndex) {
-						row = size - col - 1;
-					}
-					// If i is backslash
-					else if (j == backslashIndex) {
-						row = col;
-					}
-				}
-			}
-			else {
-				System.out.println("Error.  Index out of expected bounds.");
-			}
-
-			// Just to double check
-			if (row != Value.INVALID && col != Value.INVALID && isOpenPosition(row, col)) {
-				intersections.add(new Position(row, col, size - 1));
-			} else {
-				System.out.println("Error: Board.findSinglesIntersection()");
-			}
-		}
-
-		return intersections;
-	}
 }

@@ -19,7 +19,7 @@ public class Human implements Player {
 		return Value.show(value);
 	}
 
-	public Play getPlay(Board board) {
+	public Play getPlay(Board0 board) {
 		int size = board.size();
 		String inputRow, inputCol;
 		Position position = new Position(board.maxIndex());

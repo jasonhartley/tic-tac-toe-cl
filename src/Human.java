@@ -6,9 +6,7 @@ public class Human implements Player {
 	private int value;
 
 	public Human(int value) {
-		if (Value.isValidPlayer(value)) {
-			this.value = value;
-		}
+		this.value = value;
 	}
 
 	public int value() {
@@ -16,13 +14,33 @@ public class Human implements Player {
 	}
 
 	public String show() {
-		return Value.show(value);
+		return String.valueOf(value);// todo: fix this
 	}
 
-	public Play getPlay(Board0 board) {
-		int size = board.size();
+	public int getPlay(Board board) {
+		String input;
+		int ordinal = -1;// If -1 is returned, something went wrong getting the input
+		try {
+			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+			do {
+				do {
+					System.out.print("Enter a position number: ");
+					input = br.readLine();
+				}
+				while (!isPostiveInt(input));
+				ordinal = Integer.valueOf(input) - 1;// The displayed ordinals start at 1 rather than 0
+			}
+			while (!board.isOpen(ordinal));
+
+		} catch (IOException io) {
+			io.printStackTrace();
+		}
+
+		return ordinal;
+
+		/*int size = board.size();
 		String inputRow, inputCol;
-		Position position = new Position(board.maxIndex());
+		//Position position = new Position(board.maxIndex());
 		int row, col;
 
 		try {
@@ -52,7 +70,7 @@ public class Human implements Player {
 			io.printStackTrace();
 		}
 
-		return new Play(position, value);
+		return new Play(position, value);*/
 	}
 
 	private boolean isPostiveInt(String input) {

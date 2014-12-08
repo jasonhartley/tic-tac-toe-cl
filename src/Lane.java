@@ -93,7 +93,7 @@ public class Lane {
 	}
 	
 	// If a lane is empty except for one playerValue, return the open ordinals as a set.
-	// If playerValue is negative, check al player values OTHER than playerValue.
+	// If playerValue is negative, check all player values OTHER than playerValue.
 	Set<Integer> getSingle(int playerValue) {
 		Set<Integer> playerValueSet = playerValueSet(playerValue);
 		Set<Integer> openSet = getOpen();
@@ -135,10 +135,10 @@ public class Lane {
 		Set<Integer> playerValueSet = new TreeSet<Integer>();
 
 		if (playerValue < 0) {
-			for (int i = 1; i < playerCount; i++) {
+			for (int i = 1; i <= playerCount; i++) {
 				playerValueSet.add(i);
 			}
-			playerValueSet.remove(playerValue);// playerValue is the only element NOT in the set
+			playerValueSet.remove(-playerValue);// playerValue is the only element NOT in the set
 		}
 		else {
 			playerValueSet.add(playerValue);// playerValue is the only element in the set

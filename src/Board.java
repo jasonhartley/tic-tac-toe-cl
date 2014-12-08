@@ -40,16 +40,20 @@ public class Board {
 	}
 
 	// Returns true if is a winning play
-	public boolean put(int ordinal, int playerValue) {
+	public int put(int ordinal, int playerValue) {
 		Set<Integer> lanesToUpdate = laneIndexesByOrdinal.get(ordinal);
 		for (int laneIndex : lanesToUpdate) {
-			// If a winning play, immediately return true
+			// If a winning play, immediately return player value
 			if (lanes.get(laneIndex).put(playerValue, ordinal)) {
 				//playCount++;// todo: where to put playCount increment?
-				return true;
+				return playerValue;
 			}
 		}
-		return false;
+		// If there is no winner and all the positions are occupied, it's a draw.
+		if (playCount() == ordinalCount) {
+			return -1;// draw
+		}
+		return 0;// No winner, no draw. Game still in progress.
 	}
 
 	public void show() {
@@ -152,7 +156,13 @@ public class Board {
 	}
 
 	public int findASingle(int playerValue) {
-		return findSingles(playerValue).iterator().next();// todo: what if set is empty?
+		Set<Integer> set = findSingles(playerValue);
+		if (set.iterator().hasNext()) {
+			return set.iterator().next();
+		}
+		else {
+			return -1;
+		}
 	}
 
 	// Returns a set of open ordinals where singles lanes intersect for a given player value
@@ -233,7 +243,7 @@ public class Board {
 		return open;
 	}
 
-	public int findAnOpen(int playerValue) {
+	public int findAnOpen() {
 		return randomElement(findOpen());
 	}
 
@@ -263,10 +273,16 @@ public class Board {
 	}
 
 	private int randomElement(Set<Integer> set) {
-		Random r = new Random();
-		int random = r.nextInt(size);
-		while (random-- > 0) set.iterator().next();
-		return set.iterator().next();
+		if (!set.iterator().hasNext()) {
+			throw new IllegalArgumentException();// todo: is this the right exception?
+		}
+
+		int random = new Random().nextInt(set.size());
+		int chosen = 0;
+		for (int ordinal : set) {
+			if (random-- == 0) chosen = ordinal;
+		}
+		return chosen;
 	}
 
 	public String getPlayerString(int playerValue) {

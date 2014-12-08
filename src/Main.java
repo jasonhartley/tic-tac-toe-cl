@@ -8,20 +8,27 @@ public class Main {
 
 		Board board = new Board(size);
 		Player[] players = new Player[playerCount];// In the future, the number of players may scale
-		players[0] = new Computer(1);
+		players[0] = new Computer(1);// todo: fix redundant player value, make ArrayList
 		players[1] = new Human(2);// todo: menu for which player is which
 
 		int playerValue = 0;// Player value of whose turn it is
-		int play;
+		int play, state = 0;
 
-		do {
+		while (state == 0) {
 			board.show();
 			playerValue = playerValue % playerCount + 1;
 			play = players[playerValue - 1].getPlay(board);
+			state = board.put(play, playerValue);
 		}
-		while (!board.put(play, playerValue));
 
 		board.show();
-		System.out.println("Winner: " + board.getPlayerString(playerValue));// todo: show the player letter, e.g. X or O, etc.
+		if (state > 0) {
+			System.out.println("Winner: " + board.getPlayerString(state));
+			System.out.println();
+		}
+		else {
+			System.out.println("Draw");
+			System.out.println();
+		}
 	}
 }

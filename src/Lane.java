@@ -75,11 +75,6 @@ public class Lane {
 		return taken;
 	}
 
-	// Returns a set of taken ordinals for a given player value
-	Set<Integer> getTaken(int playerValue) {
-		return playerSet(playerValue);
-	}
-
 	// Returns a set of one element containing the player value (including 0 for empty) who occupies the given ordinal
 	Set<Integer> getPlayerValue(int ordinal) {
 		Set<Integer> set = new TreeSet<Integer>();

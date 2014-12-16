@@ -3,6 +3,8 @@ import java.util.*;
 public class Board {
 	public static final int MIN_SIZE = 3;
 	public static final int MAX_SIZE = 30;
+	public static final int MIN_PLAYER_COUNT = 2;
+	public static final int MAX_PLAYER_COUNT = 26;// capital letters; could me more, may need to be less
 
 	private int size, ordinalCount, laneCount, playerCount;
 
@@ -10,11 +12,11 @@ public class Board {
 	private List<Set<Integer>> laneIndexesByOrdinal = new ArrayList<Set<Integer>>();
 	private Set<Integer> sideIndexes = new TreeSet<Integer>();
 
-	public Board(int size) {
+	public Board(int size, int playerCount) {
 		this.size = size;
 		ordinalCount = size * size;
 		laneCount = size * 2 + 2;// rows, columns, and 2 diagonals
-		playerCount = 2;// todo: make this a parameter
+		this.playerCount = playerCount;
 
 		// Fill the list with open sets
 		while (laneIndexesByOrdinal.size() < ordinalCount) {
@@ -25,7 +27,6 @@ public class Board {
 		for (int laneIndex = 0; laneIndex < laneCount; laneIndex++ ) {
 			// Create the lane
 			lanes.add(new Lane(laneIndex, size, playerCount));
-			System.out.println(lanes.get(laneIndex).getOpen());
 
 			// Add this lane index to the list of lanes by ordinal
 			for (int ordinal : lanes.get(laneIndex).getOpen()) {
@@ -58,22 +59,30 @@ public class Board {
 
 	public void show() {
 		int ordinal, playerValue;
-		String playerString;
-		Set<Integer> set = new TreeSet<Integer>();
+		String position;
 
-		for (int row = 0; row < 3; row++) {
-			for (int col = 0; col < 3; col++) {
+		for (int row = 0; row < size; row++) {
+			for (int col = 0; col < size; col++) {
 				ordinal = row * size + col;
 				playerValue = lanes.get(row).getPlayerValue(ordinal).iterator().next();
 				if (playerValue == 0) {
-					playerString = String.valueOf(ordinal + 1);// ordinal displayed starts at 1, not 0
+					position = String.valueOf(ordinal + 1);// ordinal displayed starts at 1, not 0
 				}
 				else {
-					playerString = getPlayerString(playerValue);
+					position = Player.show(playerValue);
 				}
-				System.out.print(" " + playerString + " ");
+				System.out.print(" " + position + " ");
+				if (col < size - 1) {
+					System.out.print("|");
+				}
 			}
 			System.out.println();
+			if (row < size - 1) {
+				for (int i = 0; i < size * 4 - 1; i++) {
+					System.out.print("-");
+				}
+				System.out.println();
+			}
 		}
 		System.out.println();
 	}
@@ -218,10 +227,6 @@ public class Board {
 		tempIntersection.retainAll(anti);
 		singlesIntersections.addAll(tempIntersection);
 
-		// todo: when playerValue is negative, loop through all the other players and return a singlesIntersections
-		// set as soon as a playerValue produces a non-empty set.  Reason: This is used for blocking a possible
-		// split and since a player can only block one at a time, we'll just return the first one we find.
-
 		return singlesIntersections;
 	}
 
@@ -259,10 +264,6 @@ public class Board {
 		return taken;
 	}
 
-	public int size() {
-		return size;
-	}
-
 	public int playCount() {
 		int count = 0;
 		// Only loop through the rows
@@ -273,21 +274,12 @@ public class Board {
 	}
 
 	private int randomElement(Set<Integer> set) {
-		if (!set.iterator().hasNext()) {
-			throw new IllegalArgumentException();// todo: is this the right exception?
-		}
-
-		int random = new Random().nextInt(set.size());
-		int chosen = 0;
-		for (int ordinal : set) {
-			if (random-- == 0) chosen = ordinal;
-		}
-		return chosen;
+		return Util.randomElement(set);
 	}
 
-	public String getPlayerString(int playerValue) {
+	/*public String getPlayerString(int playerValue) {
 		if (playerValue == 1) return "X";
 		if (playerValue == 2) return "O";
 		return "A";// todo: make this actually work using the other letters of the alphabet
-	}
+	}*/
 }

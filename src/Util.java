@@ -17,8 +17,17 @@ public class Util {
 
 	}
 
+	public static int randomInt(int max) {
+		return new Random().nextInt(max);
+	}
+
 	public static boolean isPositiveInt(String input) {
 		String pattern ="\\d+";// regex for positive int
 		return input.matches(pattern);
 	}
+
+	public static boolean isValidPlayerType(String input) {
+		return isPositiveInt(input) && Integer.valueOf(input) >= 1 && Integer.valueOf(input) <= 2;
+	}
+
 }

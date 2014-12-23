@@ -1,51 +1,41 @@
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Map;
 
 public class Main {
 
 	public static void main(String[] args) {
-		final int size = args.length < 1 ? Board.MIN_SIZE : Integer.parseInt(args[0]);// Size of the board, default to 3
-		final int playerCount = args.length < 2 ? 2 : Integer.parseInt(args[1]);// Player count, default to 2
+		int size = Board.MIN_SIZE;
+		int playerCount = Board.MIN_PLAYER_COUNT;
 
-		Board board = new Board(size, playerCount);
-		List<Player> players = new ArrayList<Player>();// todo: more than 2 players
-		String input;
-
-		try {
-			BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-			System.out.println();
-			System.out.println("Press [1] for Computer, [2] for Human");
-
-			for (int playerOrder = 0; playerOrder < playerCount; playerOrder++) {
-				do {
-					System.out.print("Player " + (playerOrder + 1) + ": ");
-					input = br.readLine();
-				}
-				while (!Util.isPositiveInt(input) || Integer.valueOf(input) > playerCount);
-
-				if (Integer.valueOf(input) == 1) {
-					players.add(new Computer(playerOrder + 1));
-				}
-				else {
-					players.add(new Human(playerOrder + 1));
-				}
+		// Sanitize the arguments
+		if (args.length > 0 && Util.isPositiveInt(args[0])) {
+			int sizeArg = Integer.parseInt(args[0]);
+			if (sizeArg > Board.MIN_SIZE) {
+				size = sizeArg;
 			}
-			System.out.println();
-
-		} catch (IOException io) {
-			io.printStackTrace();
+			if (sizeArg > Board.MAX_SIZE) {
+				size = Board.MAX_SIZE;
+			}
+		}
+		if (args.length > 1 && Util.isPositiveInt(args[1])) {
+			int playerCountArg = Integer.parseInt(args[1]);
+			if (playerCountArg > Board.MIN_PLAYER_COUNT) {
+				playerCount = playerCountArg;
+			}
+			if (playerCountArg > Board.MAX_PLAYER_COUNT) {
+				playerCount = Board.MAX_PLAYER_COUNT;
+			}
 		}
 
+		Board board = new Board(size, playerCount);
+		Map<Integer, Player> players = Menu.getPlayers(playerCount);
 		int play, state = 0, counter = 0;
 		Player currentPlayer = null;
 
+		// The main loop
 		while (state == 0) {
 			board.show();
 			counter = counter % playerCount;
-			currentPlayer = players.get(counter);
+			currentPlayer = players.get(counter + 1);
 			play = currentPlayer.getPlay(board);
 			state = board.put(play, currentPlayer.value());
 			counter++;
@@ -53,12 +43,10 @@ public class Main {
 
 		board.show();
 		if (state > 0) {
-			System.out.println("Winner: " + currentPlayer.show());
-			System.out.println();
+			System.out.println("Winner: " + currentPlayer.show() + "\n");
 		}
 		else {
-			System.out.println("Draw");
-			System.out.println();
+			System.out.println("Draw\n");
 		}
 	}
 }

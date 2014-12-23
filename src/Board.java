@@ -6,8 +6,7 @@ public class Board {
 	public static final int MIN_PLAYER_COUNT = 2;
 	public static final int MAX_PLAYER_COUNT = 26;// capital letters; could me more, may need to be less
 
-	private int size, ordinalCount, laneCount, playerCount;
-
+	private int size, ordinalCount, laneCount;
 	private List<Lane> lanes = new ArrayList<Lane>();
 	private List<Set<Integer>> laneIndexesByOrdinal = new ArrayList<Set<Integer>>();
 	private Set<Integer> sideIndexes = new TreeSet<Integer>();
@@ -16,7 +15,6 @@ public class Board {
 		this.size = size;
 		ordinalCount = size * size;
 		laneCount = size * 2 + 2;// rows, columns, and 2 diagonals
-		this.playerCount = playerCount;
 
 		// Fill the list with open sets
 		while (laneIndexesByOrdinal.size() < ordinalCount) {
@@ -46,7 +44,6 @@ public class Board {
 		for (int laneIndex : lanesToUpdate) {
 			// If a winning play, immediately return player value
 			if (lanes.get(laneIndex).put(playerValue, ordinal)) {
-				//playCount++;// todo: where to put playCount increment?
 				return playerValue;
 			}
 		}
@@ -276,10 +273,4 @@ public class Board {
 	private int randomElement(Set<Integer> set) {
 		return Util.randomElement(set);
 	}
-
-	/*public String getPlayerString(int playerValue) {
-		if (playerValue == 1) return "X";
-		if (playerValue == 2) return "O";
-		return "A";// todo: make this actually work using the other letters of the alphabet
-	}*/
 }

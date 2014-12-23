@@ -78,7 +78,7 @@ public class Lane {
 	// Returns a set of one element containing the player value (including 0 for empty) who occupies the given ordinal
 	Set<Integer> getPlayerValue(int ordinal) {
 		Set<Integer> set = new TreeSet<Integer>();
-		for (int playerValue = 0; playerValue < size; playerValue++) {
+		for (int playerValue = 0; playerValue <= playerCount; playerValue++) {
 			if (playerSet(playerValue).contains(ordinal)) {
 				set.add(playerValue);
 				return set;

@@ -5,14 +5,17 @@ public abstract class Player {
 		return playerValue;
 	}
 
-	// Returns a capital letter of the alphabet corresponding to playerValue, except with X for 1 and O for 2
+	/**
+	 * Show the player's character, e.g. X or O
+	 *
+	 * @return Returns a capital letter of the alphabet corresponding to playerValue, with 'X' for 1 and 'O' for 2,
+	 *         'A' for 3... 'N' for 16, 'P' for 17... 'W' for 24, 'Y' for 25, and 'Z' for 26
+	 */
 	public String show() {
 		return show(playerValue);
 	}
 
 	public static String show(int playerValue) {
-		final int O = 15;
-		final int X = 24;
 		char playerChar = (char) ('@' + playerValue);// '@' is ascii 64, 'A' is 65
 
 		if (playerValue == 1) {
@@ -21,10 +24,11 @@ public abstract class Player {
 		else if (playerValue == 2) {
 			playerChar = 'O';
 		}
-		else if (playerValue >= O) {
+		// P
+		else if (playerValue >= 17) {
 			playerChar -= 1;
-		}
-		else if (playerValue >= X) {
+		}// A
+		else if (playerValue >= 3) {
 			playerChar -= 2;
 		}
 

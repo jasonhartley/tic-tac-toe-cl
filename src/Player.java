@@ -15,6 +15,7 @@ public abstract class Player {
 		return show(playerValue);
 	}
 
+	// for Board.show() since it only has the playerValue and not the player object
 	public static String show(int playerValue) {
 		char playerChar = (char) ('@' + playerValue);// '@' is ascii 64, 'A' is 65
 

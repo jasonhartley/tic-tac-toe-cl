@@ -4,7 +4,7 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
-public class Menu {
+public class Options {
 
 	public static Map<Integer, Player> getPlayers(int playerCount) {
 
@@ -36,5 +36,33 @@ public class Menu {
 		}
 
 		return players;
+	}
+
+	public static int getSize(String args[]) {
+		int size = Board.MIN_SIZE;
+		if (args.length > 0 && Util.isPositiveInt(args[0])) {
+			int sizeArg = Integer.parseInt(args[0]);
+			if (sizeArg > Board.MIN_SIZE) {
+				size = sizeArg;
+			}
+			if (sizeArg > Board.MAX_SIZE) {
+				size = Board.MAX_SIZE;
+			}
+		}
+		return size;
+	}
+
+	public static int getPlayerCount(String args[]) {
+		int playerCount = Board.MIN_PLAYER_COUNT;
+		if (args.length > 1 && Util.isPositiveInt(args[1])) {
+			int playerCountArg = Integer.parseInt(args[1]);
+			if (playerCountArg > Board.MIN_PLAYER_COUNT) {
+				playerCount = playerCountArg;
+			}
+			if (playerCountArg > Board.MAX_PLAYER_COUNT) {
+				playerCount = Board.MAX_PLAYER_COUNT;
+			}
+		}
+		return playerCount;
 	}
 }
